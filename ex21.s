@@ -203,4 +203,4 @@ miniloop:
 duration_part_counter: /* Add 1 to the overtone duration counter (every <multiplier> times) */
 	add #1, r13
 	mov #0, r10
-	jmp soundmaker
+	jmp miniloop
