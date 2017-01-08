@@ -1,8 +1,10 @@
 .section .init9
 
-.set dc, 80 /* double croche */
+.set dc, 237 /* double croche */
 .set c, 2*dc /* croche */
 .set n, 2*c /* noire */
+
+.set multiplier, 100 /* Duration multiplier*/
 
 .set d4, 444
 .set e4, 396
@@ -16,14 +18,15 @@
 
 main:
 	mov.b #32, &0x1A /* Buzzer */
-	
 	mov   #32, r15 /* valeur initiale de la valeur de la buzzer */
-	mov   #0, r14 /* Pause counter */
-	mov   #0, r13 /* Pitch counter */
-	mov   #528, r12 /* Pitch value */
-	mov   #120, r11 /* Time value */
-	mov   #2, r10 /* Index value */
 	
+	mov   #0, r14 /* Pause counter */
+	mov   #a4, r12 /* Pitch value (default : a4) */
+	mov   #0, r13 /* Counter before next overtone (r11) */
+	mov   #n, r11 /* Overtone duration part 1 (default: 120) */
+	mov   #0, r10 /* Overtone multiplier */
+	
+init:
 	push #n
 	push #d4
 	
@@ -163,11 +166,10 @@ main:
 loop:
 
 	mov #0, r13 /* reset pitch counter */
+	mov #0, r10 /* Reset multiplier */
 	
-	pop r12
-	pop r11
-	
-	
+	pop r12 /* Pitch */
+	pop r11 /* Duration */
 	
 		
 soundmaker:
@@ -184,7 +186,21 @@ soundmaker:
 	
 	
 miniloop:
+	/* Overtone duration controller */
+	
+	add   #1, r10 /* Add to the multiplier */
+	cmp   #multiplier, r10
+	jeq   duration_part_counter /* si == alors r13++ */
+	
+	
+	/* Miniloop */
+	
 	add   #1, r14
 	cmp   r12, r14
 	jne   miniloop
 	jmp   soundmaker
+
+duration_part_counter: /* Add 1 to the overtone duration counter (every <multiplier> times) */
+	add #1, r13
+	mov #0, r10
+	jmp soundmaker
