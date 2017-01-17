@@ -1,12 +1,14 @@
 .section .init9
 
-.set dc, 237 /* double croche */
+.set dc, 85 /* double croche */
 .set c, 2*dc /* croche */
 .set n, 2*c /* noire */
+.set b, 2*n /* blanche */
+.set r, 2*b /* ronde */
 
 .set multiplier, 100 /* Duration multiplier*/
 
-.set d4, 444
+/*.set d4, 444
 .set e4, 396
 .set f4, 373
 .set g4, 333
@@ -14,19 +16,39 @@
 .set bb4, 280
 .set c5, 249
 .set d5, 222
-.set s, 1
+.set s, 0xFFFF*/
+
+.set d4, 233
+.set e4, 208
+.set f4, 196
+.set g4, 175
+.set a4, 156
+.set bb4, 147
+.set c5, 131
+.set d5, 117
+
+.set s, 0xFFFF
 
 main:
 	mov.b #32, &0x1A /* Buzzer */
 	mov   #32, r15 /* valeur initiale de la valeur de la buzzer */
-	
+
 	mov   #0, r14 /* Pause counter */
-	mov   #a4, r12 /* Pitch value (default : a4) */
 	mov   #0, r13 /* Counter before next overtone (r11) */
-	mov   #n, r11 /* Overtone duration part 1 (default: 120) */
 	mov   #0, r10 /* Overtone multiplier */
 	
 init:
+	push #0
+	push #0
+
+
+	push #r
+	push #s
+
+	push #r
+	push #s
+
+
 	push #n
 	push #d4
 	
@@ -167,40 +189,42 @@ loop:
 
 	mov #0, r13 /* reset pitch counter */
 	mov #0, r10 /* Reset multiplier */
+	mov #0, r14 /* Reset tone */
 	
 	pop r12 /* Pitch */
 	pop r11 /* Duration */
-	
-		
-soundmaker:
 
-	mov.b r15, &0x19 /* transferer r15 vers le buzzer */
-	xor   #32, r15 /* alterne entre #32 et #0 */
+	cmp #0, r12
+	jeq init
 	
-	
-	mov #0, r14 /* Reset counter */
-	
-	add #1, r13	
-	cmp   r11, r13
-	jeq   loop
-	
-	
-miniloop:
-	/* Overtone duration controller */
-	
-	add   #1, r10 /* Add to the multiplier */
-	cmp   #multiplier, r10
-	jeq   duration_part_counter /* si == alors r13++ */
-	
-	
-	/* Miniloop */
-	
-	add   #1, r14
-	cmp   r12, r14
-	jne   miniloop
-	jmp   soundmaker
 
-duration_part_counter: /* Add 1 to the overtone duration counter (every <multiplier> times) */
-	add #1, r13
+main_loop:
+	add #1, r10 /* Add to the multiplier */
+	add #1, r14 /* Add to the tone */
+	
+
+	cmp r14, r12
+	jeq switch /* Si il est temps de changer le buzzer */
+
+switch_return:
+
+	/* Multiplier controller */
+	cmp   #multiplier, r10	
+	jne   main_loop_next /* si == alors r13++ */
 	mov #0, r10
-	jmp miniloop
+	add #1, r13
+
+main_loop_next:
+
+	cmp r13, r11
+	jeq loop /* Si c'est la fin de la note */
+	
+	jmp main_loop
+
+
+switch:
+	xor   #32, r15 /* alterne entre #32 et #0 */
+	mov.b r15, &0x19 /* transferer r15 vers le buzzer */
+	mov #0, r14
+	jmp switch_return
+	
